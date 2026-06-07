@@ -9,6 +9,7 @@ export interface User {
   colorTheme: string;
   isActive?: boolean;
   vacationMode?: boolean;
+  mascotEnabled?: boolean;
   createdAt: number;
 }
 

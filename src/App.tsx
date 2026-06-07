@@ -45,6 +45,8 @@ const BottomNav = () => {
 
 const AppRoutes = () => {
   useDemerits();
+  const { currentUser } = useAppContext();
+  const showMascot = currentUser?.mascotEnabled !== false;
 
   return (
     <>
@@ -59,6 +61,7 @@ const AppRoutes = () => {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <BottomNav />
+      {showMascot && <CheeringMascot />}
     </>
   );
 };
@@ -69,7 +72,6 @@ function App() {
       <MascotProvider>
         <BrowserRouter>
           <AppRoutes />
-          <CheeringMascot />
         </BrowserRouter>
       </MascotProvider>
     </AppProvider>

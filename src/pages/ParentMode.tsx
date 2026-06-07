@@ -3,6 +3,8 @@ import { useAppContext } from '../context/AppContext';
 import { Settings, Shield, Trash2, Plus, Edit2, Save, X, Key, User as UserIcon, LayoutDashboard, Gift, CheckSquare } from 'lucide-react';
 import HabitHistoryDashboard from '../components/HabitHistoryDashboard';
 import type { HabitTemplate } from '../types';
+import { giftEmoji, profileAvatars } from '../utils/avatars';
+import { displayRewardIcon } from '../utils/rewards';
 
 function ParentMode() {
   const { 
@@ -59,7 +61,7 @@ function ParentMode() {
   const [newRewardTitle, setNewRewardTitle] = useState('');
   const [newRewardCost, setNewRewardCost] = useState(100);
   const [rewardSaveStatus, setRewardSaveStatus] = useState<string | null>(null);
-  const [newRewardIcon, setNewRewardIcon] = useState('🎁');
+  const [newRewardIcon, setNewRewardIcon] = useState(giftEmoji);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -203,7 +205,6 @@ function ParentMode() {
 
   const activeHabits = targetUser ? habitTemplates.filter(t => t.userId === targetUser.id && t.isActive) : [];
   const activeRewards = targetUser ? rewardTemplates.filter(t => (t.userId === targetUser.id || t.userId === 'global') && t.isActive) : [];
-  const avatars = ['🐯', '🦊', '🐷', '🐸', '🐼', '🦖', '🐉', '🦁', '🐶'];
 
   const renderHistoryList = (habits: typeof activeHabits, title: string) => {
     if (habits.length === 0) return null;
@@ -221,7 +222,7 @@ function ParentMode() {
           return (
             <div key={habit.id} style={{ marginBottom: '1.5rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                <strong>{habit.title} {habit.isCritical && <span style={{color: 'var(--warning)', fontSize: '0.8rem'}}>★ Critical</span>}</strong>
+                <strong>{habit.title} {habit.isCritical && <span style={{color: 'var(--warning)', fontSize: '0.8rem'}}>{'\u2605'} Critical</span>}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.25rem' }}>
                 {days.map(dateStr => {
@@ -236,16 +237,16 @@ function ParentMode() {
 
                   let bgColor = 'rgba(0, 0, 0, 0.06)';
                   let contentColor = 'var(--text-muted)';
-                  let content = <span style={{ opacity: 0.5 }}>−</span>;
+                  let content = <span style={{ opacity: 0.5 }}>{'\u2212'}</span>;
 
                   if (isDone) {
                     bgColor = 'var(--success)';
                     contentColor = 'white';
-                    content = <span>✓</span>;
+                    content = <span>{'\u2713'}</span>;
                   } else if (hasDemerit) {
                     bgColor = '#ef4444';
                     contentColor = 'white';
-                    content = <span>−</span>;
+                    content = <span>{'\u2212'}</span>;
                   }
 
                   return (
@@ -423,7 +424,7 @@ function ParentMode() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div style={{ flex: 1 }}>
                         <strong style={{ display: 'block' }}>{habit.title}</strong>
-                        <span className="points-badge" style={{ marginTop: '0.5rem' }}>{habit.points} pts • {habit.category} • {habit.frequency === 'weekly' ? 'Weekly' : 'Daily'} {habit.isCritical && '• Critical'}</span>
+                        <span className="points-badge" style={{ marginTop: '0.5rem' }}>{habit.points} pts {'\u2022'} {habit.category} {'\u2022'} {habit.frequency === 'weekly' ? 'Weekly' : 'Daily'} {habit.isCritical && '\u2022 Critical'}</span>
                       </div>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <button className="btn btn-outline" style={{ padding: '0.5rem', border: 'none' }} onClick={() => openEditHabit(habit)}>
@@ -490,7 +491,7 @@ function ParentMode() {
               {activeRewards.map(reward => (
                 <div key={reward.id} className="glass-panel" style={{ padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <div style={{ fontSize: '1.5rem', background: 'var(--bg-color)', padding: '0.5rem', borderRadius: '12px' }}>{reward.icon}</div>
+                    <div style={{ fontSize: '1.5rem', background: 'var(--bg-color)', padding: '0.5rem', borderRadius: '12px' }}>{displayRewardIcon(reward.icon, reward.title)}</div>
                     <div>
                       <strong style={{ display: 'block' }}>{reward.title}</strong>
                       <span className="points-badge" style={{ marginTop: '0.25rem' }}>{reward.cost} pts</span>
@@ -525,7 +526,7 @@ function ParentMode() {
                 </div>
                 <div className="input-group" style={{ flex: 1 }}>
                   <label>Emoji</label>
-                  <input className="input-field" value={newRewardIcon} onChange={e => setNewRewardIcon(e.target.value)} placeholder="🎡" />
+                  <input className="input-field" value={newRewardIcon} onChange={e => setNewRewardIcon(e.target.value)} placeholder={giftEmoji} />
                 </div>
               </div>
               <button type="submit" className="btn btn-primary" style={{ width: '100%', marginTop: '0.5rem' }}>
@@ -553,7 +554,7 @@ function ParentMode() {
             <div className="input-group" style={{marginTop: '1rem', marginBottom: '1rem'}}>
               <label>Avatar Emoji</label>
               <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-                {avatars.map(a => (
+                {profileAvatars.map(a => (
                   <div 
                     key={a}
                     onClick={() => setProfileAvatar(a)}
@@ -579,6 +580,26 @@ function ParentMode() {
               >
                 {targetUser?.vacationMode ? 'Enabled' : 'Disabled'}
               </button>
+            </div>
+
+            <div style={{ padding: '1rem', background: 'var(--card-bg)', borderRadius: '12px', marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <strong style={{ display: 'block' }}>Mascot</strong>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Show celebration mascot for this child</span>
+              </div>
+              {(() => {
+                const mascotEnabled = targetUser?.mascotEnabled !== false;
+                return (
+              <button
+                className={`btn ${mascotEnabled ? 'btn-primary' : 'btn-outline'}`}
+                onClick={() => targetUser && updateUser(targetUser.id, { mascotEnabled: !mascotEnabled })}
+                style={{ padding: '0.5rem 1rem' }}
+                disabled={!targetUser}
+              >
+                {mascotEnabled ? 'Enabled' : 'Disabled'}
+              </button>
+                );
+              })()}
             </div>
 
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>

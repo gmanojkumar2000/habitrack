@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS users (
   avatar TEXT NOT NULL,
   color_theme TEXT NOT NULL,
   is_active INTEGER NOT NULL DEFAULT 1,
+  mascot_enabled INTEGER NOT NULL DEFAULT 1,
   created_at INTEGER NOT NULL
 );
 
@@ -129,8 +130,8 @@ VALUES (?, ?, ?)
 `;
 
 const insertUserSql = `
-INSERT INTO users (id, name, avatar, color_theme, is_active, created_at)
-VALUES (?, ?, ?, ?, ?, ?)
+INSERT INTO users (id, name, avatar, color_theme, is_active, mascot_enabled, created_at)
+VALUES (?, ?, ?, ?, ?, ?, ?)
 `;
 
 const insertHabitTemplateSql = `
@@ -184,6 +185,7 @@ export async function initDatabase(options = {}) {
   // Migrations
   try { db.exec("ALTER TABLE habit_templates ADD COLUMN frequency TEXT NOT NULL DEFAULT 'daily'"); } catch (e) {}
   try { db.exec("ALTER TABLE ad_hoc_entries ADD COLUMN related_habit_id TEXT"); } catch (e) {}
+  try { db.exec("ALTER TABLE users ADD COLUMN mascot_enabled INTEGER NOT NULL DEFAULT 1"); } catch (e) {}
   
   persistDatabase();
 
@@ -201,7 +203,7 @@ export function getState() {
   const settingsMap = Object.fromEntries(settingsRows.map((row) => [row.key, row.value]));
 
   const users = selectAll(`
-    SELECT id, name, avatar, color_theme, is_active, created_at
+    SELECT id, name, avatar, color_theme, is_active, mascot_enabled, created_at
     FROM users
     ORDER BY created_at ASC
   `).map((row) => ({
@@ -210,13 +212,16 @@ export function getState() {
     avatar: row.avatar,
     colorTheme: row.color_theme,
     isActive: Boolean(row.is_active),
+    mascotEnabled: Boolean(row.mascot_enabled),
     createdAt: Number(row.created_at)
   }));
 
   const currentUser = users.find((user) => user.id === settingsMap.current_user_id) || null;
 
   return {
-    settings: { parentPin: settingsMap.parent_pin || defaultState.settings.parentPin },
+    settings: {
+      parentPin: settingsMap.parent_pin || defaultState.settings.parentPin
+    },
     users,
     currentUser,
     habitTemplates: selectAll(`
@@ -316,6 +321,7 @@ export function replaceState(inputState) {
         user.avatar,
         user.colorTheme,
         user.isActive === false ? 0 : 1,
+        user.mascotEnabled === false ? 0 : 1,
         user.createdAt
       ]);
     }
@@ -415,6 +421,7 @@ function normalizeState(inputState = {}) {
       avatar: String(user.avatar || ''),
       colorTheme: String(user.colorTheme || 'primary'),
       isActive: user.isActive !== false,
+      mascotEnabled: user.mascotEnabled !== false,
       createdAt: Number(user.createdAt || Date.now())
     })),
     currentUser: state.currentUser || null,

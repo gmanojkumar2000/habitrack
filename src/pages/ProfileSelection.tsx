@@ -2,15 +2,14 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Settings } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { defaultAvatar, profileAvatars } from '../utils/avatars';
 
 function ProfileSelection() {
   const { users, addUser, switchUser } = useAppContext();
   const navigate = useNavigate();
   const [isAdding, setIsAdding] = useState(false);
   const [newName, setNewName] = useState('');
-  const [selectedAvatar, setSelectedAvatar] = useState('ðŸ¯');
-
-  const avatars = ['ðŸ¯', 'ðŸ¦Š', 'ðŸ·', 'ðŸ¸', 'ðŸ¼', 'ðŸ¦–'];
+  const [selectedAvatar, setSelectedAvatar] = useState(defaultAvatar);
 
   const handleSelectUser = (id: string) => {
     switchUser(id);
@@ -25,12 +24,11 @@ function ProfileSelection() {
     setNewName('');
   };
 
-
   if (users.length === 0 || isAdding) {
     return (
       <div className="container animate-slide-up">
         <h2 style={{ textAlign: 'center', marginBottom: '2rem', marginTop: '2rem' }}>
-          {users.length === 0 ? "Welcome to Habitrack! Let's add your first hero." : "Add a new hero"}
+          {users.length === 0 ? "Welcome to Habitrack! Let's add your first hero." : 'Add a new hero'}
         </h2>
         <div className="glass-panel">
           <form onSubmit={handleAddUser}>
@@ -45,12 +43,12 @@ function ProfileSelection() {
                 autoFocus
               />
             </div>
-            
-            <div className="input-group" style={{marginTop: '1rem'}}>
+
+            <div className="input-group" style={{ marginTop: '1rem' }}>
               <label>Pick an Avatar</label>
               <div className="avatar-grid">
-                {avatars.map(a => (
-                  <div 
+                {profileAvatars.slice(0, 6).map(a => (
+                  <div
                     key={a}
                     className={`avatar-option ${a === selectedAvatar ? 'selected' : ''}`}
                     onClick={() => setSelectedAvatar(a)}
@@ -73,7 +71,6 @@ function ProfileSelection() {
             </div>
           </form>
         </div>
-
       </div>
     );
   }
@@ -81,8 +78,8 @@ function ProfileSelection() {
   return (
     <div className="container animate-slide-up" style={{ justifyContent: 'center' }}>
       <div style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
-        <button 
-          className="btn btn-outline" 
+        <button
+          className="btn btn-outline"
           onClick={() => navigate('/parent')}
           style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem' }}
         >
@@ -91,15 +88,15 @@ function ProfileSelection() {
         </button>
       </div>
       <h1 style={{ textAlign: 'center', marginBottom: '3rem' }}>Who's playing today?</h1>
-      
+
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2rem', justifyContent: 'center' }}>
         {users.filter(u => u.isActive !== false).map((u, i) => (
-          <div 
+          <div
             key={u.id}
             onClick={() => handleSelectUser(u.id)}
             className="glass-panel animate-pop"
-            style={{ 
-              display: 'flex', flexDirection: 'column', alignItems: 'center', 
+            style={{
+              display: 'flex', flexDirection: 'column', alignItems: 'center',
               cursor: 'pointer', padding: '2rem', width: '160px',
               animationDelay: `${i * 0.1}s`
             }}
@@ -109,10 +106,10 @@ function ProfileSelection() {
           </div>
         ))}
 
-        <div 
+        <div
           onClick={() => setIsAdding(true)}
           className="glass-panel"
-          style={{ 
+          style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', padding: '2rem', width: '160px', opacity: 0.7, borderStyle: 'dashed', borderWidth: '2px'
           }}

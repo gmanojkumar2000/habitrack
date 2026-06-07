@@ -2,6 +2,7 @@ import { useAppContext } from '../context/AppContext';
 import { Navigate } from 'react-router-dom';
 import { Award, Flame, Gift, Star, Target } from 'lucide-react';
 import { calculateCurrentStreak, calculateUserPoints, getNextStreakMilestone } from '../utils/progress';
+import { displayRewardIcon } from '../utils/rewards';
 
 function Rewards() {
   const { currentUser, dailyEntries, adHocEntries, rewardTemplates } = useAppContext();
@@ -83,7 +84,7 @@ function Rewards() {
                   <div key={reward.id} className="glass-panel animate-slide-up" style={{ animationDelay: `${index * 0.1}s`, border: '2px solid var(--success-light)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                       <div style={{ fontSize: '2rem', width: '54px', height: '54px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--card-bg)', borderRadius: '8px' }}>
-                        {reward.icon || 'Gift'}
+                        {displayRewardIcon(reward.icon, reward.title)}
                       </div>
                       <div style={{ flex: 1 }}>
                         <h3 style={{ margin: '0 0 0.25rem 0' }}>{reward.title}</h3>
@@ -113,7 +114,7 @@ function Rewards() {
                     <div key={reward.id} className="glass-panel animate-slide-up" style={{ animationDelay: `${index * 0.1 + 0.2}s` }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1rem' }}>
                         <div style={{ fontSize: '2rem', width: '54px', height: '54px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--card-bg)', borderRadius: '8px', opacity: 0.75 }}>
-                          {reward.icon || 'Gift'}
+                          {displayRewardIcon(reward.icon, reward.title)}
                         </div>
                         <div style={{ flex: 1 }}>
                           <h3 style={{ margin: '0 0 0.25rem 0' }}>{reward.title}</h3>
