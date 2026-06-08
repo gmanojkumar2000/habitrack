@@ -35,7 +35,7 @@ export default defineConfig({
     host: '0.0.0.0', // Make it accessible on LAN
     port: 3020,      // Port aligned with implementation plan
     proxy: {
-      '/api': 'http://127.0.0.1:3021'
+      '/api': process.env.API_TARGET || 'http://127.0.0.1:3021'
     }
   }
 })

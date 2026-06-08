@@ -39,6 +39,9 @@ aws-credentials*
 *.db
 *.db-shm
 *.db-wal
+.e2e/
+playwright-report/
+test-results/
 
 # Editor directories and files
 .vscode/*

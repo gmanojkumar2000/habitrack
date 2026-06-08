@@ -7,8 +7,10 @@ import type {
   DailyHabitEntry,
   AdHocEntry,
   RewardTemplate,
+  EarnedBadge,
   Quote
 } from '../types';
+import { addNewlyEarnedBadges } from '../utils/badges';
 
 interface AppState {
   settings: GlobalSettings;
@@ -18,6 +20,7 @@ interface AppState {
   dailyEntries: DailyHabitEntry[];
   adHocEntries: AdHocEntry[];
   rewardTemplates: RewardTemplate[];
+  earnedBadges: EarnedBadge[];
   quotes: Quote[];
 }
 
@@ -44,6 +47,8 @@ interface AppContextType extends AppState {
   saveLocalDataBackup: () => Promise<SyncResult>;
   syncLocalData: () => Promise<SyncResult>;
   clearData: () => Promise<void>;
+  badgeCelebration: EarnedBadge | null;
+  dismissBadgeCelebration: () => Promise<void>;
 }
 
 const defaultState: AppState = {
@@ -54,6 +59,7 @@ const defaultState: AppState = {
   dailyEntries: [],
   adHocEntries: [],
   rewardTemplates: [],
+  earnedBadges: [],
   quotes: []
 };
 
@@ -120,6 +126,7 @@ const normalizeState = (state: Partial<AppState> | null | undefined): AppState =
     dailyEntries: Array.isArray(mergedState.dailyEntries) ? mergedState.dailyEntries : [],
     adHocEntries: Array.isArray(mergedState.adHocEntries) ? mergedState.adHocEntries : [],
     rewardTemplates: Array.isArray(mergedState.rewardTemplates) ? mergedState.rewardTemplates : [],
+    earnedBadges: Array.isArray(mergedState.earnedBadges) ? mergedState.earnedBadges : [],
     quotes: Array.isArray(mergedState.quotes) ? mergedState.quotes : []
   };
 };
@@ -145,12 +152,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     loadData();
   }, []);
 
-  const commitState = async (nextState: AppState) => {
-    stateRef.current = nextState;
-    setState(nextState);
-
+  const commitState = async (nextState: AppState, evaluateBadges = false) => {
+    const reconciled = evaluateBadges
+      ? addNewlyEarnedBadges(nextState, generateId)
+      : { state: nextState, newBadges: [] };
+    stateRef.current = reconciled.state;
+    setState(reconciled.state);
     try {
-      const savedState = await saveServerState(nextState);
+      const savedState = await saveServerState(reconciled.state);
       stateRef.current = savedState;
       setState(savedState);
       setLoadError(null);
@@ -243,7 +252,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         completed: !updated[existingIdx].completed,
         completedAt: !updated[existingIdx].completed ? Date.now() : undefined
       };
-      await commitState({ ...prev, dailyEntries: updated });
+      await commitState({ ...prev, dailyEntries: updated }, true);
       return;
     }
 
@@ -260,7 +269,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       completed: true,
       completedAt: Date.now()
     };
-    await commitState({ ...prev, dailyEntries: [...prev.dailyEntries, newEntry] });
+    await commitState({ ...prev, dailyEntries: [...prev.dailyEntries, newEntry] }, true);
   };
 
   const deleteAdHocEntry = async (id: string) => {
@@ -379,6 +388,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await commitState(defaultState);
   };
 
+  const badgeCelebration = state.currentUser
+    ? state.earnedBadges.find((badge) =>
+      badge.userId === state.currentUser?.id && badge.celebratedAt == null
+    ) || null
+    : null;
+
+  const dismissBadgeCelebration = async () => {
+    if (!badgeCelebration) return;
+    const prev = stateRef.current;
+    await commitState({
+      ...prev,
+      earnedBadges: prev.earnedBadges.map((badge) =>
+        badge.id === badgeCelebration.id
+          ? { ...badge, celebratedAt: Date.now() }
+          : badge
+      )
+    });
+  };
+
   if (!isLoaded) return <div>Loading server database...</div>;
 
   if (loadError) {
@@ -399,7 +427,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updatePin, addUser, updateUser, deleteUser, switchUser,
       addHabitTemplate, updateHabitTemplate, toggleDailyHabit,
       addAdHocEntry, deleteAdHocEntry, addRewardTemplate, updateRewardTemplate, deleteRewardTemplate, redeemReward,
-      saveLocalDataBackup, syncLocalData, clearData
+      saveLocalDataBackup, syncLocalData, clearData,
+      badgeCelebration,
+      dismissBadgeCelebration
     }}>
       {children}
     </AppContext.Provider>

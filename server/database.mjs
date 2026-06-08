@@ -10,6 +10,7 @@ const defaultState = {
   dailyEntries: [],
   adHocEntries: [],
   rewardTemplates: [],
+  earnedBadges: [],
   quotes: [
     { id: '1', text: 'You are capable of amazing things.', author: 'Unknown' },
     { id: '2', text: 'Every day is a fresh start.', author: 'Unknown' },
@@ -90,6 +91,17 @@ CREATE TABLE IF NOT EXISTS reward_templates (
 
 CREATE INDEX IF NOT EXISTS idx_reward_templates_user_id ON reward_templates(user_id);
 
+CREATE TABLE IF NOT EXISTS earned_badges (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  badge_id TEXT NOT NULL,
+  earned_at INTEGER NOT NULL,
+  celebrated_at INTEGER,
+  UNIQUE(user_id, badge_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_earned_badges_user_id ON earned_badges(user_id);
+
 CREATE TABLE IF NOT EXISTS quotes (
   id TEXT PRIMARY KEY,
   text TEXT NOT NULL,
@@ -163,6 +175,11 @@ INSERT INTO quotes (id, text, author)
 VALUES (?, ?, ?)
 `;
 
+const insertEarnedBadgeSql = `
+INSERT INTO earned_badges (id, user_id, badge_id, earned_at, celebrated_at)
+VALUES (?, ?, ?, ?, ?)
+`;
+
 let SQL;
 let db;
 let dbPath;
@@ -186,6 +203,7 @@ export async function initDatabase(options = {}) {
   try { db.exec("ALTER TABLE habit_templates ADD COLUMN frequency TEXT NOT NULL DEFAULT 'daily'"); } catch (e) {}
   try { db.exec("ALTER TABLE ad_hoc_entries ADD COLUMN related_habit_id TEXT"); } catch (e) {}
   try { db.exec("ALTER TABLE users ADD COLUMN mascot_enabled INTEGER NOT NULL DEFAULT 1"); } catch (e) {}
+  try { db.exec("ALTER TABLE earned_badges ADD COLUMN celebrated_at INTEGER"); } catch (e) {}
   
   persistDatabase();
 
@@ -281,6 +299,17 @@ export function getState() {
       isActive: Boolean(row.is_active),
       createdAt: Number(row.created_at)
     })),
+    earnedBadges: selectAll(`
+      SELECT id, user_id, badge_id, earned_at, celebrated_at
+      FROM earned_badges
+      ORDER BY earned_at ASC
+    `).map((row) => ({
+      id: row.id,
+      userId: row.user_id,
+      badgeId: row.badge_id,
+      earnedAt: Number(row.earned_at),
+      celebratedAt: row.celebrated_at == null ? undefined : Number(row.celebrated_at)
+    })),
     quotes: selectAll(`
       SELECT id, text, author
       FROM quotes
@@ -304,6 +333,7 @@ export function replaceState(inputState) {
       DELETE FROM daily_habit_entries;
       DELETE FROM habit_templates;
       DELETE FROM reward_templates;
+      DELETE FROM earned_badges;
       DELETE FROM users;
       DELETE FROM settings;
       DELETE FROM quotes;
@@ -376,6 +406,16 @@ export function replaceState(inputState) {
         template.icon,
         template.isActive ? 1 : 0,
         template.createdAt
+      ]);
+    }
+
+    for (const badge of state.earnedBadges) {
+      run(insertEarnedBadgeSql, [
+        badge.id,
+        badge.userId,
+        badge.badgeId,
+        badge.earnedAt,
+        badge.celebratedAt ?? null
       ]);
     }
 
@@ -465,6 +505,13 @@ function normalizeState(inputState = {}) {
       icon: String(template.icon || ''),
       isActive: template.isActive !== false,
       createdAt: Number(template.createdAt || Date.now())
+    })),
+    earnedBadges: asArray(state.earnedBadges).map((badge) => ({
+      id: requireString(badge.id, 'earnedBadge.id'),
+      userId: requireString(badge.userId, 'earnedBadge.userId'),
+      badgeId: requireString(badge.badgeId, 'earnedBadge.badgeId'),
+      earnedAt: Number(badge.earnedAt || Date.now()),
+      celebratedAt: badge.celebratedAt == null ? undefined : Number(badge.celebratedAt)
     })),
     quotes: asArray(state.quotes).map((quote) => ({
       id: requireString(quote.id, 'quote.id'),

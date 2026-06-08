@@ -59,6 +59,14 @@ export interface RewardTemplate {
   createdAt: number;
 }
 
+export interface EarnedBadge {
+  id: string;
+  userId: string;
+  badgeId: string;
+  earnedAt: number;
+  celebratedAt?: number;
+}
+
 export interface Quote {
   id: string;
   text: string;

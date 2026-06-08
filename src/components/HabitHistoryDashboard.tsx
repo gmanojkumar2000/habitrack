@@ -11,13 +11,22 @@ interface HabitHistoryDashboardProps {
   habits: HabitTemplate[];
   dailyEntries: DailyHabitEntry[];
   adHocEntries: AdHocEntry[];
+  onToggleHabit?: (habitId: string, date: string) => Promise<void>;
 }
 
 const ranges: RangeLength[] = [7, 30, 60, 90];
 
-function HabitHistoryDashboard({ userId, habits, dailyEntries, adHocEntries }: HabitHistoryDashboardProps) {
+function HabitHistoryDashboard({
+  userId,
+  habits,
+  dailyEntries,
+  adHocEntries,
+  onToggleHabit
+}: HabitHistoryDashboardProps) {
   const [range, setRange] = useState<RangeLength>(7);
+  const [savingCell, setSavingCell] = useState<string | null>(null);
   const days = buildRecentDateKeys(range);
+  const isEditable = Boolean(onToggleHabit) && range === 7;
   const dailyHabits = habits.filter((habit) => habit.frequency !== 'weekly');
   const weeklyHabits = habits.filter((habit) => habit.frequency === 'weekly');
   const completedDays = days.filter((date) =>
@@ -60,6 +69,18 @@ function HabitHistoryDashboard({ userId, habits, dailyEntries, adHocEntries }: H
                       userId={userId}
                       dailyEntries={dailyEntries}
                       adHocEntries={adHocEntries}
+                      isEditable={isEditable}
+                      isSaving={savingCell === `${habit.id}:${date}`}
+                      onToggle={async () => {
+                        if (!onToggleHabit) return;
+                        const cellKey = `${habit.id}:${date}`;
+                        setSavingCell(cellKey);
+                        try {
+                          await onToggleHabit(habit.id, date);
+                        } finally {
+                          setSavingCell(null);
+                        }
+                      }}
                     />
                   ))}
                 </div>
@@ -84,7 +105,9 @@ function HabitHistoryDashboard({ userId, habits, dailyEntries, adHocEntries }: H
       <div className="history-toolbar">
         <div>
           <strong>{range}-day view</strong>
-          <span>{completionRate}% of days had a win</span>
+          <span>
+            {isEditable ? 'Tap a day to update it' : `${completionRate}% of days had a win`}
+          </span>
         </div>
         <div className="segmented-control" aria-label="History range">
           {ranges.map((value) => (
@@ -119,9 +142,22 @@ interface HistoryDayProps {
   userId: string;
   dailyEntries: DailyHabitEntry[];
   adHocEntries: AdHocEntry[];
+  isEditable: boolean;
+  isSaving: boolean;
+  onToggle: () => Promise<void>;
 }
 
-function HistoryDay({ date, habitId, range, userId, dailyEntries, adHocEntries }: HistoryDayProps) {
+function HistoryDay({
+  date,
+  habitId,
+  range,
+  userId,
+  dailyEntries,
+  adHocEntries,
+  isEditable,
+  isSaving,
+  onToggle
+}: HistoryDayProps) {
   const entry = dailyEntries.find((dailyEntry) => dailyEntry.habitTemplateId === habitId && dailyEntry.date === date);
   const isDone = entry?.completed;
   const hasDemerit = adHocEntries.some((adHocEntry) =>
@@ -139,13 +175,35 @@ function HistoryDay({ date, habitId, range, userId, dailyEntries, adHocEntries }
     return <span className={`history-cell ${status}`} title={`${localDate.toLocaleDateString()} ${status}`} />;
   }
 
-  return (
-    <div className="history-day">
+  const dayContent = (
+    <>
       <div className={`history-dot ${status}`}>
         {isDone ? <Check size={12} /> : hasDemerit ? <X size={12} /> : <Minus size={12} />}
       </div>
       <span>{dayLabel}</span>
       <span>{localDate.getDate()}</span>
+    </>
+  );
+
+  if (isEditable) {
+    const action = isDone ? 'mark incomplete' : 'mark complete';
+    return (
+      <button
+        type="button"
+        className="history-day history-day-button"
+        aria-label={`${localDate.toLocaleDateString()}: ${action}`}
+        title={`Click to ${action}`}
+        disabled={isSaving}
+        onClick={() => void onToggle()}
+      >
+        {dayContent}
+      </button>
+    );
+  }
+
+  return (
+    <div className="history-day">
+      {dayContent}
     </div>
   );
 }

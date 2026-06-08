@@ -10,7 +10,7 @@ function ParentMode() {
   const { 
     settings, users, habitTemplates, dailyEntries, rewardTemplates, adHocEntries,
     addHabitTemplate, updateHabitTemplate, updatePin, updateUser, deleteUser, clearData,
-    addRewardTemplate, deleteRewardTemplate, redeemReward, deleteAdHocEntry
+    addRewardTemplate, deleteRewardTemplate, redeemReward, deleteAdHocEntry, toggleDailyHabit
   } = useAppContext();
   
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -350,6 +350,7 @@ function ParentMode() {
                 habits={activeHabits}
                 dailyEntries={dailyEntries}
                 adHocEntries={adHocEntries}
+                onToggleHabit={toggleDailyHabit}
               />
             ) : <p>No child profile selected.</p>}
           </div>
