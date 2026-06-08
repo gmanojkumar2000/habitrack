@@ -42,7 +42,7 @@ const completedEntry = (habitId: string, date: string, points = 10) => ({
 });
 
 const state = (overrides: Record<string, unknown> = {}) => ({
-  settings: { parentPin: '0000' },
+  settings: { parentPin: '0000', badgeExpansionStartedAt: 1 },
   users: [baseUser],
   currentUser: baseUser,
   habitTemplates: [],
@@ -72,9 +72,18 @@ async function dismissBadgeQueue(page: Page) {
   }
 }
 
+async function expectBadgeInQueue(page: Page, badgeName: string) {
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    await expect(page.getByRole('dialog')).toBeVisible();
+    if (await page.getByText(badgeName, { exact: true }).isVisible().catch(() => false)) return;
+    await page.getByRole('button', { name: 'Close badge celebration' }).click();
+  }
+  throw new Error(`Badge "${badgeName}" was not found in the celebration queue`);
+}
+
 test.beforeEach(async ({ request }) => {
   await resetState(request, {
-    settings: { parentPin: '0000' },
+    settings: { parentPin: '0000', badgeExpansionStartedAt: 1 },
     users: [],
     currentUser: null,
     habitTemplates: [],
@@ -210,6 +219,8 @@ test('extra good deeds update points and progress', async ({ page, request }) =>
   await page.getByPlaceholder('e.g. Helped fold laundry').fill('Helped with dishes');
   await page.locator('input[type="number"]').fill('12');
   await page.getByRole('button', { name: 'Claim Points!' }).click();
+  await expect(page.getByText('Bonus Spark', { exact: true })).toBeVisible();
+  await dismissBadgeQueue(page);
 
   await page.getByRole('link', { name: 'Progress' }).click();
   await expect(page.getByText('Available Points').locator('..').getByRole('heading', { name: '12' })).toBeVisible();
@@ -251,7 +262,21 @@ test('parent redeems an affordable reward and the child balance updates', async 
   }).toBe(true);
 
   await page.getByRole('link', { name: 'Rewards' }).click();
+  await expectBadgeInQueue(page, 'Dream Redeemer');
+  await dismissBadgeQueue(page);
   await expect(page.getByText('20', { exact: true }).first()).toBeVisible();
+});
+
+test('badges page displays the complete 50-badge collection', async ({ page, request }) => {
+  await resetState(request, state());
+
+  await page.goto('/badges');
+  await expect(page.getByText('0 of 50 earned')).toBeVisible();
+  await expect(page.locator('article.badge-card')).toHaveCount(50);
+  await expect(page.getByRole('heading', { name: 'Comebacks' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Habit Mastery' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Points & Rewards' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Extra Effort' })).toBeVisible();
 });
 
 test('all child navigation tabs work and state remains after reload', async ({ page, request }) => {

@@ -3,7 +3,7 @@ import path from 'node:path';
 import initSqlJs from 'sql.js';
 
 const defaultState = {
-  settings: { parentPin: '0000' },
+  settings: { parentPin: '0000', badgeExpansionStartedAt: Date.now() },
   users: [],
   currentUser: null,
   habitTemplates: [],
@@ -198,6 +198,11 @@ export async function initDatabase(options = {}) {
     : new SQL.Database();
 
   db.exec(schemaSql);
+  const now = Date.now();
+  run(`
+    INSERT OR IGNORE INTO settings (key, value, updated_at)
+    VALUES (?, ?, ?)
+  `, ['badge_expansion_started_at', String(now), now]);
   
   // Migrations
   try { db.exec("ALTER TABLE habit_templates ADD COLUMN frequency TEXT NOT NULL DEFAULT 'daily'"); } catch (e) {}
@@ -238,7 +243,10 @@ export function getState() {
 
   return {
     settings: {
-      parentPin: settingsMap.parent_pin || defaultState.settings.parentPin
+      parentPin: settingsMap.parent_pin || defaultState.settings.parentPin,
+      badgeExpansionStartedAt: Number(
+        settingsMap.badge_expansion_started_at || defaultState.settings.badgeExpansionStartedAt
+      )
     },
     users,
     currentUser,
@@ -340,6 +348,11 @@ export function replaceState(inputState) {
     `);
 
     run(insertSettingsSql, ['parent_pin', state.settings.parentPin, now]);
+    run(insertSettingsSql, [
+      'badge_expansion_started_at',
+      String(state.settings.badgeExpansionStartedAt),
+      now
+    ]);
     if (state.currentUser?.id) {
       run(insertSettingsSql, ['current_user_id', state.currentUser.id, now]);
     }
@@ -453,7 +466,10 @@ function normalizeState(inputState = {}) {
 
   return {
     settings: {
-      parentPin: String(state.settings.parentPin || defaultState.settings.parentPin)
+      parentPin: String(state.settings.parentPin || defaultState.settings.parentPin),
+      badgeExpansionStartedAt: Number(
+        state.settings.badgeExpansionStartedAt ?? defaultState.settings.badgeExpansionStartedAt
+      )
     },
     users: asArray(state.users).map((user) => ({
       id: requireString(user.id, 'user.id'),

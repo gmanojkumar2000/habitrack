@@ -1,5 +1,6 @@
 export interface GlobalSettings {
   parentPin: string;
+  badgeExpansionStartedAt: number;
 }
 
 export interface User {

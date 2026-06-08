@@ -52,7 +52,7 @@ interface AppContextType extends AppState {
 }
 
 const defaultState: AppState = {
-  settings: { parentPin: '0000' },
+  settings: { parentPin: '0000', badgeExpansionStartedAt: 0 },
   users: [],
   currentUser: null,
   habitTemplates: [],
@@ -154,7 +154,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const commitState = async (nextState: AppState, evaluateBadges = false) => {
     const reconciled = evaluateBadges
-      ? addNewlyEarnedBadges(nextState, generateId)
+      ? addNewlyEarnedBadges(
+        nextState,
+        generateId,
+        Date.now(),
+        nextState.settings.badgeExpansionStartedAt
+      )
       : { state: nextState, newBadges: [] };
     stateRef.current = reconciled.state;
     setState(reconciled.state);
@@ -300,7 +305,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       nextState.habitTemplates = [...nextState.habitTemplates, newTemplate];
     }
 
-    await commitState(nextState);
+    await commitState(nextState, true);
   };
 
   const addRewardTemplate = async (template: Omit<RewardTemplate, 'id' | 'createdAt'>) => {
@@ -310,7 +315,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: generateId(),
       createdAt: Date.now()
     };
-    await commitState({ ...prev, rewardTemplates: [...prev.rewardTemplates, newTemplate] });
+    await commitState({ ...prev, rewardTemplates: [...prev.rewardTemplates, newTemplate] }, true);
   };
 
   const updateRewardTemplate = async (id: string, updates: Partial<RewardTemplate>) => {
@@ -318,7 +323,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await commitState({
       ...prev,
       rewardTemplates: prev.rewardTemplates.map(r => r.id === id ? { ...r, ...updates } : r)
-    });
+    }, true);
   };
 
   const deleteRewardTemplate = async (id: string) => {
@@ -345,7 +350,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       createdAt: Date.now()
     };
 
-    await commitState({ ...prev, adHocEntries: [...prev.adHocEntries, newEntry] });
+    await commitState({ ...prev, adHocEntries: [...prev.adHocEntries, newEntry] }, true);
   };
 
   const syncLocalData = async (): Promise<SyncResult> => {
