@@ -3,7 +3,27 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
-import { getState, initDatabase, replaceState } from '../server/database.mjs';
+import { clearState, getState, initDatabase, replaceState } from '../server/database.mjs';
+
+test('default quotes are seeded and restored after a factory reset', async () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'habitrack-quotes-test-'));
+  const dbPath = path.join(tempDir, 'habitrack.sqlite');
+
+  try {
+    await initDatabase({ dbPath });
+    assert.equal(getState().quotes.length, 100);
+
+    replaceState({ quotes: [] });
+    assert.equal(getState().quotes.length, 0);
+
+    clearState();
+    const quotes = getState().quotes;
+    assert.equal(quotes.length, 100);
+    assert.equal(new Set(quotes.map((quote) => quote.text)).size, 100);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
 
 test('earned badges persist through the SQLite state round trip', async () => {
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'habitrack-test-'));

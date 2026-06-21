@@ -2,6 +2,104 @@ import fs from 'node:fs';
 import path from 'node:path';
 import initSqlJs from 'sql.js';
 
+const additionalDefaultQuotes = [
+  { id: '6', text: 'The secret of getting ahead is getting started.', author: 'Mark Twain' },
+  { id: '7', text: 'It always seems impossible until it is done.', author: 'Nelson Mandela' },
+  { id: '8', text: 'Do what you can, with what you have, where you are.', author: 'Theodore Roosevelt' },
+  { id: '9', text: 'Keep your face always toward the sunshine—and shadows will fall behind you.', author: 'Walt Whitman' },
+  { id: '10', text: 'Fall seven times and stand up eight.', author: 'Japanese Proverb' },
+  { id: '11', text: 'Why fit in when you were born to stand out?', author: 'Dr. Seuss' },
+  { id: '12', text: 'The more that you read, the more things you will know. The more that you learn, the more places you will go.', author: 'Dr. Seuss' },
+  { id: '13', text: 'You always pass failure on the way to success.', author: 'Mickey Rooney' },
+  { id: '14', text: 'Only surround yourself with people who will lift you higher.', author: 'Oprah Winfrey' },
+  { id: '15', text: 'We grow great by dreams.', author: 'Woodrow Wilson' },
+  { id: '16', text: 'Do not let what you cannot do interfere with what you can do.', author: 'John Wooden' },
+  { id: '17', text: 'Winning means you are doing better than you have done before.', author: 'Bonnie Blair' },
+  { id: '18', text: 'You are braver than you believe, stronger than you seem, and smarter than you think.', author: 'A.A. Milne' },
+  { id: '19', text: 'It is not what happens to you, but how you react to it that matters.', author: 'Epictetus' },
+  { id: '20', text: 'Be a voice, not an echo.', author: 'Unknown' },
+  { id: '21', text: 'Dream big and dare to fail.', author: 'Norman Vaughan' },
+  { id: '22', text: 'Everything you can imagine is real.', author: 'Pablo Picasso' },
+  { id: '23', text: 'In a gentle way, you can shake the world.', author: 'Mahatma Gandhi' },
+  { id: '24', text: 'To be the best, you must be able to handle the worst.', author: 'Wilson Kanadi' },
+  { id: '25', text: 'Mistakes are proof that you are trying.', author: 'Unknown' },
+  { id: '26', text: 'Small steps still move you forward.', author: 'HabitTrack' },
+  { id: '27', text: 'Practice turns hard things into familiar things.', author: 'HabitTrack' },
+  { id: '28', text: 'Your effort today builds your confidence tomorrow.', author: 'HabitTrack' },
+  { id: '29', text: 'A little progress is worth celebrating.', author: 'HabitTrack' },
+  { id: '30', text: 'Start where you are and improve one thing.', author: 'HabitTrack' },
+  { id: '31', text: 'Being patient with yourself is part of learning.', author: 'HabitTrack' },
+  { id: '32', text: 'Every expert was once a beginner.', author: 'HabitTrack' },
+  { id: '33', text: 'Trying again is a kind of courage.', author: 'HabitTrack' },
+  { id: '34', text: 'Good habits make big goals feel possible.', author: 'HabitTrack' },
+  { id: '35', text: 'You do not have to be perfect to make progress.', author: 'HabitTrack' },
+  { id: '36', text: 'One focused minute can begin something great.', author: 'HabitTrack' },
+  { id: '37', text: 'Choose the next helpful step.', author: 'HabitTrack' },
+  { id: '38', text: 'Your future self will thank you for starting.', author: 'HabitTrack' },
+  { id: '39', text: 'Kindness is a strength you can practice.', author: 'HabitTrack' },
+  { id: '40', text: 'Questions are how curious minds grow.', author: 'HabitTrack' },
+  { id: '41', text: 'A calm breath can make room for a smart choice.', author: 'HabitTrack' },
+  { id: '42', text: 'Today is another chance to surprise yourself.', author: 'HabitTrack' },
+  { id: '43', text: 'Keep going; your skills are growing quietly.', author: 'HabitTrack' },
+  { id: '44', text: 'Finishing one task creates energy for the next.', author: 'HabitTrack' },
+  { id: '45', text: 'Your best effort can look different every day.', author: 'HabitTrack' },
+  { id: '46', text: 'A mistake can become your next lesson.', author: 'HabitTrack' },
+  { id: '47', text: 'Consistency is a superpower built one day at a time.', author: 'HabitTrack' },
+  { id: '48', text: 'You can be proud of progress no one else sees.', author: 'HabitTrack' },
+  { id: '49', text: 'Hard moments do not last forever.', author: 'HabitTrack' },
+  { id: '50', text: 'Listen, learn, and then give it a try.', author: 'HabitTrack' },
+  { id: '51', text: 'The first step does not need to be a giant one.', author: 'HabitTrack' },
+  { id: '52', text: 'Your ideas deserve a chance to grow.', author: 'HabitTrack' },
+  { id: '53', text: 'Helping someone else makes both of you stronger.', author: 'HabitTrack' },
+  { id: '54', text: 'Rest, reset, and return when you are ready.', author: 'HabitTrack' },
+  { id: '55', text: 'You can solve more than you think by staying curious.', author: 'HabitTrack' },
+  { id: '56', text: 'A tidy space can help create a clear mind.', author: 'HabitTrack' },
+  { id: '57', text: 'Keep promises to yourself, especially the small ones.', author: 'HabitTrack' },
+  { id: '58', text: 'Your attitude can turn a chore into a challenge.', author: 'HabitTrack' },
+  { id: '59', text: 'Learning slowly is still learning.', author: 'HabitTrack' },
+  { id: '60', text: 'Make room for fun while you work toward your goals.', author: 'HabitTrack' },
+  { id: '61', text: 'You can begin again without starting over.', author: 'HabitTrack' },
+  { id: '62', text: 'Notice what went well and build from there.', author: 'HabitTrack' },
+  { id: '63', text: 'A brave choice can be quiet and small.', author: 'HabitTrack' },
+  { id: '64', text: 'Doing your part makes the whole team better.', author: 'HabitTrack' },
+  { id: '65', text: 'The way forward begins with showing up.', author: 'HabitTrack' },
+  { id: '66', text: 'Use what you know, then learn what you need.', author: 'HabitTrack' },
+  { id: '67', text: 'Your pace is allowed to be your own.', author: 'HabitTrack' },
+  { id: '68', text: 'A goal becomes real when you give it a next step.', author: 'HabitTrack' },
+  { id: '69', text: 'Confidence grows each time you keep going.', author: 'HabitTrack' },
+  { id: '70', text: 'Even ordinary days can hold extraordinary effort.', author: 'HabitTrack' },
+  { id: '71', text: 'Be curious about what you can become.', author: 'HabitTrack' },
+  { id: '72', text: 'Clean up, set up, and make tomorrow easier.', author: 'HabitTrack' },
+  { id: '73', text: 'You are learning how to do difficult things.', author: 'HabitTrack' },
+  { id: '74', text: 'Celebrate the habit, not only the result.', author: 'HabitTrack' },
+  { id: '75', text: 'Focus on what you can control right now.', author: 'HabitTrack' },
+  { id: '76', text: 'A thoughtful pause can prevent a careless mistake.', author: 'HabitTrack' },
+  { id: '77', text: 'Good choices get easier when you repeat them.', author: 'HabitTrack' },
+  { id: '78', text: 'Your words can make someone feel included.', author: 'HabitTrack' },
+  { id: '79', text: 'Do one useful thing before you wait for motivation.', author: 'HabitTrack' },
+  { id: '80', text: 'The courage to ask for help is real courage.', author: 'HabitTrack' },
+  { id: '81', text: 'You can turn nervous energy into careful action.', author: 'HabitTrack' },
+  { id: '82', text: 'A strong routine gives your dreams a place to grow.', author: 'HabitTrack' },
+  { id: '83', text: 'Look back only long enough to see how far you came.', author: 'HabitTrack' },
+  { id: '84', text: 'When the plan changes, you can change with it.', author: 'HabitTrack' },
+  { id: '85', text: 'Your attention is powerful; point it somewhere useful.', author: 'HabitTrack' },
+  { id: '86', text: 'There is more than one good way to solve a problem.', author: 'HabitTrack' },
+  { id: '87', text: 'Be the teammate who notices and helps.', author: 'HabitTrack' },
+  { id: '88', text: 'Preparation is a gift you give your future self.', author: 'HabitTrack' },
+  { id: '89', text: 'A difficult task gets smaller once you begin.', author: 'HabitTrack' },
+  { id: '90', text: 'Keep your goal in sight and your next step nearby.', author: 'HabitTrack' },
+  { id: '91', text: 'You can disagree and still be respectful.', author: 'HabitTrack' },
+  { id: '92', text: 'Every completed habit is a vote for who you want to be.', author: 'HabitTrack' },
+  { id: '93', text: 'When you feel stuck, make the task smaller.', author: 'HabitTrack' },
+  { id: '94', text: 'Honesty builds trust one choice at a time.', author: 'HabitTrack' },
+  { id: '95', text: 'Strong people know when to slow down and think.', author: 'HabitTrack' },
+  { id: '96', text: 'Use your energy on the things that matter most.', author: 'HabitTrack' },
+  { id: '97', text: 'You are allowed to learn by asking, trying, and adjusting.', author: 'HabitTrack' },
+  { id: '98', text: 'Leave each place a little better than you found it.', author: 'HabitTrack' },
+  { id: '99', text: 'Progress becomes visible when small efforts add up.', author: 'HabitTrack' },
+  { id: '100', text: 'Tomorrow begins with the choices you make today.', author: 'HabitTrack' }
+];
+
 const defaultState = {
   settings: { parentPin: '0000', badgeExpansionStartedAt: Date.now() },
   users: [],
@@ -16,7 +114,8 @@ const defaultState = {
     { id: '2', text: 'Every day is a fresh start.', author: 'Unknown' },
     { id: '3', text: 'Believe you can and you are halfway there.', author: 'Theodore Roosevelt' },
     { id: '4', text: 'Make today so awesome yesterday gets jealous.', author: 'Unknown' },
-    { id: '5', text: 'You can learn something new every day if you listen.', author: 'Unknown' }
+    { id: '5', text: 'You can learn something new every day if you listen.', author: 'Unknown' },
+    ...additionalDefaultQuotes
   ]
 };
 
@@ -198,6 +297,12 @@ export async function initDatabase(options = {}) {
     : new SQL.Database();
 
   db.exec(schemaSql);
+  for (const quote of defaultState.quotes) {
+    run(
+      'INSERT OR IGNORE INTO quotes (id, text, author) VALUES (?, ?, ?)',
+      [quote.id, quote.text, quote.author ?? null]
+    );
+  }
   const now = Date.now();
   run(`
     INSERT OR IGNORE INTO settings (key, value, updated_at)
